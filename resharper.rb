@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+
+# This work is licensed under the GNU Public License (GPL).
+# To view a copy of this license, visit http://www.gnu.org/copyleft/gpl.html
+
+# Written by Shady Atef Diab
+#Email : shadyoatef@gmail.com
+
+
+# Ported and tweaked from Python to Ruby, from Better Arabic Reshaper [https://github.com/mpcabd/python-arabic-reshaper]
+
+# Usage:
+### Install ruby-bidi [https://github.com/elad/ruby-bidi], can be installed from RubyGems `gem install bidi`.
+
+#require "bidi"
+#require_relative 'resharper'
+#bidi = Bidi.new
+#Text = bidi.to_visual reshape "سلام لكم"
+### Now you can pass `Text` to any function that handles displaying/printing of the text, like writing it to rmagick Image or passing it to a PDF generating method.
+
+
 DEFINED_CHARACTERS_ORGINAL_ALF_UPPER_MDD = "\u0622"
 DEFINED_CHARACTERS_ORGINAL_ALF_UPPER_HAMAZA = "\u0623"
 DEFINED_CHARACTERS_ORGINAL_ALF_LOWER_HAMAZA = "\u0625"
@@ -5,10 +26,10 @@ DEFINED_CHARACTERS_ORGINAL_ALF = "\u0627"
 DEFINED_CHARACTERS_ORGINAL_LAM = "\u0644"
 
 LAM_ALEF_GLYPHS = [
-    %w(\u0622 \uFEF6 \uFEF5),
-    %w(\u0623 \uFEF8 \uFEF7),
-    %w(\u0627 \uFEFC \uFEFB),
-    %w(\u0625 \uFEFA \uFEF9)
+    ["\u0622", "\uFEF6", "\uFEF5"],
+    ["\u0623", "\uFEF8", "\uFEF7"],
+    ["\u0627", "\uFEFC", "\uFEFB"],
+    ["\u0625", "\uFEFA", " \uFEF9"]
 ]
 
 HARAKAT = %w(\u0600 \u0601 \u0602 \u0603 \u0606 \u0607 \u0608 \u0609 \u060A \u060B \u060D \u060E \u0610 \u0611 \u0612 \u0613 \u0614 \u0615 \u0616 \u0617 \u0618 \u0619 \u061A \u061B \u061E \u061F \u0621 \u063B \u063C \u063D \u063E \u063F \u0640 \u064B \u064C \u064D \u064E \u064F \u0650 \u0651 \u0652 \u0653 \u0654 \u0655 \u0656 \u0657 \u0658 \u0659 \u065A \u065B \u065C \u065D \u065E \u0660 \u066A \u066B \u066C \u066F \u0670 \u0672 \u06D4 \u06D5 \u06D6 \u06D7 \u06D8 \u06D9 \u06DA \u06DB \u06DC \u06DF \u06E0 \u06E1 \u06E2 \u06E3 \u06E4 \u06E5 \u06E6 \u06E7 \u06E8 \u06E9 \u06EA \u06EB \u06EC \u06ED \u06EE \u06EF \u06D6 \u06D7 \u06D8 \u06D9 \u06DA \u06DB \u06DC \u06DD \u06DE \u06DF \u06F0 \u06FD \uFE70 \uFE71 \uFE72 \uFE73 \uFE74 \uFE75 \uFE76 \uFE77 \uFE78 \uFE79 \uFE7A \uFE7B \uFE7C \uFE7D \uFE7E \uFE7F \uFC5E \uFC5F \uFC60 \uFC61 \uFC62 \uFC63)
@@ -117,7 +138,7 @@ def get_reshaped_glyph(target, location)
 
 end
 
-def get_glyp_type(target)
+def get_glyph_type(target)
   return ARABIC_GLYPHS[target][5] if ARABIC_GLYPHS.include? target
 
   2
@@ -125,7 +146,7 @@ def get_glyp_type(target)
 end
 
 def is_haraka(target)
-  ARABIC_GLYPHS.include? target
+  HARAKAT.include? target
 end
 
 def replace_jalalah(unshaped_word)
@@ -134,10 +155,10 @@ def replace_jalalah(unshaped_word)
 end
 
 # @param [String] unshaped_word
-def replace_lam_alf(unshaped_word)
+def replace_lam_alef(unshaped_word)
   letter_before =''
-  list_word = unshaped_word.split
-  unshaped_word.split.each_with_index do |c, i|
+  list_word = unshaped_word.chars
+  unshaped_word.chars.each_with_index do |c, i|
     letter_before = c if !is_haraka(c) && c != DEFINED_CHARACTERS_ORGINAL_LAM
 
     if c == DEFINED_CHARACTERS_ORGINAL_LAM
@@ -149,7 +170,7 @@ def replace_lam_alf(unshaped_word)
         haraka_position+=1
       end
       if haraka_position< unshaped_word.length
-        if lam_position > 0 && get_glyp_type(letter_before) > 2
+        if lam_position > 0 && get_glyph_type(letter_before) > 2
           lam_alef = get_lam_alef(list_word[haraka_position], candidate_lam, false)
         else
           lam_alef = get_lam_alef(list_word[haraka_position], candidate_lam, true)
@@ -158,17 +179,17 @@ def replace_lam_alf(unshaped_word)
 
         if lam_alef!=''
           list_word[lam_position]=lam_alef
-          list_word[haraka_position]="\ "
+          list_word[haraka_position]=" "
 
         end
       end
 
     end
   end
-  list_word.to_s.gsub(' ', '')
+  list_word.join.gsub(' ', '')
 end
 
-def get_lam_alf(candidate_alef, candidate_lam, is_end_of_word)
+def get_lam_alef(candidate_alef, candidate_lam, is_end_of_word)
   shift_rate = 1
   reshaped_lam_alef = ''
 
@@ -189,14 +210,16 @@ def get_lam_alf(candidate_alef, candidate_lam, is_end_of_word)
 end
 
 class DecomposedWord
-  @stripped_harakat=[]
-  @harakat_positions=[]
-  @stripped_regular_letters=[]
-  @letters_position=[]
+  attr_reader :stripped_regular_letters
+
 
   # @param [String] word
   def initialize(word)
-    word.split.each_with_index do |c, i|
+    @stripped_harakat=[]
+    @harakat_positions=[]
+    @stripped_regular_letters=[]
+    @letters_position=[]
+    word.chars.each_with_index do |c, i|
       if is_haraka(c)
         @harakat_positions.push i
         @stripped_harakat.push c
@@ -217,4 +240,137 @@ class DecomposedWord
     l
   end
 end
-# todo: to continue translating the script from python to Ruby
+
+def get_reshaped_word(unshaped_word)
+  unshaped_word = replace_jalalah replace_lam_alef unshaped_word
+  decomposed_word = DecomposedWord.new(unshaped_word)
+  result = ""
+  result = reshape_it(decomposed_word.stripped_regular_letters.join) unless decomposed_word.stripped_regular_letters.empty?
+  decomposed_word.reconstruct_word(result)
+
+end
+
+# @param [String] unshaped_word
+def reshape_it(unshaped_word)
+
+  return "" if unshaped_word.empty?
+  return get_reshaped_glyph(unshaped_word[0], 1) if unshaped_word.length == 1
+
+  reshaped_word = []
+  unshaped_word.chars.each_index do |i|
+    before = false
+    after= false
+
+    if i == 0
+      after = get_glyph_type(unshaped_word[i]) ==4
+    elsif i == (unshaped_word.length-1)
+      before=get_glyph_type(unshaped_word[i-1]) == 4
+    else
+      after = get_glyph_type(unshaped_word[i]) == 4
+      before = get_glyph_type(unshaped_word[i - 1]) == 4
+    end
+
+    if after && before
+      reshaped_word.push(get_reshaped_glyph(unshaped_word[i], 3))
+
+    elsif after && !before
+      reshaped_word.push(get_reshaped_glyph(unshaped_word[i], 2))
+
+    elsif !after && before
+      reshaped_word.push(get_reshaped_glyph(unshaped_word[i], 4))
+
+    elsif !after && !before
+      reshaped_word.push(get_reshaped_glyph(unshaped_word[i], 1))
+
+    end
+  end
+  reshaped_word.join ""
+
+
+end
+
+def is_arabic_character(target)
+  ARABIC_GLYPHS.include? target || HARAKAT.include?(target)
+
+
+end
+
+# @param [String] word
+def has_arabic_letters(word)
+  word.each_char { |c| return true if is_arabic_character c }
+
+  false
+end
+
+# @param [String] word
+# @return [TrueClass,FalseClass]
+def is_arabic_word(word)
+  word.each_char { |c| return false unless is_arabic_character c }
+  true
+end
+
+# @param [String] sentence
+# @return [Array]
+def get_words(sentence)
+  return [] if sentence.empty?
+  sentence.split %r{\s}
+end
+
+# @param [String] word
+def get_words_from_mixed (word)
+
+  temp_word = ""
+  words = []
+  word.each_char do |c|
+    if is_arabic_character c
+      if !temp_word.empty? && !(is_arabic_word temp_word)
+        words.push temp_word
+        temp_word = c
+      else
+        temp_word+=c
+      end
+    else
+      if !temp_word.empty? && (is_arabic_word temp_word)
+        words.push temp_word
+        temp_word = c
+      else
+        temp_word+=c
+      end
+    end
+  end
+  words.push temp_word unless temp_word.empty?
+  words
+end
+
+# @param [String] sentence
+def reshape_sentence(sentence)
+  words = get_words(sentence)
+  words.each_with_index do |word, i|
+    if has_arabic_letters word
+
+      if is_arabic_word word
+        words[i]=get_reshaped_word word
+      else
+        mixed_words = get_words_from_mixed word
+        mixed_words.each_with_index do |word, j|
+          mixed_words[j]=get_reshaped_word word
+
+        end
+        words[i] = mixed_words.join
+      end
+    end
+  end
+  words.join " "
+end
+
+# @param [String] text
+def reshape(text)
+
+  lines = text.lines
+  lines.each_with_index do |line, i|
+    lines[i]=reshape_sentence(line)
+  end
+  lines.join("\n")
+
+end
+
